@@ -2,15 +2,38 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import App from "./App";
-/* ***************************** */
+
 /* SEARCH BAR */
 class SearchBar extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.handleSearch = this.handleSearch.bind(this);
+    this.handleCheckbox = this.handleCheckbox.bind(this);
+  }
+
+  handleSearch(e) {
+    this.props.onFilterTextChange(e.target.value);
+  }
+  handleCheckbox(e) {
+    this.props.onFilterStockChange(e.target.checked);
+  }
+
   render() {
     return (
       <form>
-        <input type="text" placeholder="Search..." />
+        <input
+          type="text"
+          value={this.props.filterText}
+          onChange={this.handleSearch}
+          placeholder="Search..."
+        />
         <br />
-        <input type="checkbox" />
+        <input
+          type="checkbox"
+          checked={this.props.inStockOnly}
+          onChange={this.handleCheckbox}
+        />
         <label>Only show products in stock</label>
       </form>
     );
@@ -18,39 +41,6 @@ class SearchBar extends React.Component {
 }
 
 /* PRODUCT TABLE */
-class ProductTable extends React.Component {
-  render() {
-    const rows = [];
-    let lastCategory = null;
-
-    this.props.products.forEach(product => {
-      if (product.category !== lastCategory) {
-        rows.push(
-          <ProductCategoryRow
-            category={product.category}
-            key={product.category}
-          />
-        );
-      }
-      rows.push(<ProductRow product={product} key={product.name} />);
-      lastCategory = product.category;
-    });
-
-    return (
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Price</th>
-          </tr>
-        </thead>
-
-        <tbody>{rows}</tbody>
-      </table>
-    );
-  }
-}
-
 class ProductCategoryRow extends React.Component {
   render() {
     const category = this.props.category;
@@ -80,13 +70,82 @@ class ProductRow extends React.Component {
   }
 }
 
+class ProductTable extends React.Component {
+  render() {
+    let filterText = this.props.filterText;
+    const inStockOnly = this.props.inStockOnly;
+
+    const rows = [];
+    let lastCategory = null;
+
+    this.props.products.forEach(product => {
+      if (product.name.toLowerCase().indexOf(filterText.toLowerCase()) === -1) {
+        return;
+      }
+      if (inStockOnly && !product.stocked) {
+        return;
+      }
+      if (product.category !== lastCategory) {
+        rows.push(
+          <ProductCategoryRow
+            category={product.category}
+            key={product.category}
+          />
+        );
+      }
+      rows.push(<ProductRow product={product} key={product.name} />);
+      lastCategory = product.category;
+    });
+
+    return (
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+
+        <tbody>{rows}</tbody>
+      </table>
+    );
+  }
+}
+
 /* FILTERABLE PRODUCT TABLE */
 class FilterableProductTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      filterText: "",
+      inStockOnly: false
+    };
+
+    this.handleFilterTextChange = this.handleFilterTextChange.bind(this);
+    this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
+  }
+
+  handleFilterTextChange(filterText) {
+    this.setState({ filterText: filterText });
+  }
+  handleCheckboxChange(inStockOnly) {
+    this.setState({ inStockOnly: inStockOnly });
+  }
+
   render() {
     return (
       <div>
-        <SearchBar />
-        <ProductTable products={this.props.products} />
+        <SearchBar
+          filterText={this.state.filterText}
+          inStockOnly={this.state.inStockOnly}
+          onFilterTextChange={this.handleFilterTextChange}
+          onFilterStockChange={this.handleCheckboxChange}
+        />
+        <ProductTable
+          products={this.props.products}
+          filterText={this.state.filterText}
+          inStockOnly={this.state.inStockOnly}
+        />
       </div>
     );
   }
